@@ -2,3 +2,7 @@
 # This file defines all application routes (Higher priority routes first)
 # https://www.playframework.com/documentation/latest/ScalaRouting
 # ~~~~
+
+GET         /files/:id/download                         controllers.FileController.download(id: String)
+POST        /files                                      controllers.FileController.upload
+DELETE      /files/:id                                  controllers.FileController.remove(id: String)

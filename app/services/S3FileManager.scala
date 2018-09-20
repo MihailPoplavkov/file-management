@@ -1,11 +1,11 @@
 package services
 
-import java.io.{File, InputStream}
+import java.io.{File, FileOutputStream}
 import java.util.UUID
 
 import com.amazonaws.SdkBaseException
-import com.amazonaws.services.s3.model.S3Object
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import com.amazonaws.util.IOUtils
 import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 
@@ -26,13 +26,16 @@ class S3FileManager(client: AmazonS3, configuration: Configuration) extends File
     callS3 {
       val id = UUID.randomUUID()
       client.putObject(bucketName, id.toString, file)
+      file.delete()
       id
     }
 
-  override def download(id: UUID): Either[SdkBaseException, InputStream] =
+  override def download(id: UUID): Either[SdkBaseException, File] =
     callS3 {
-      val obj: S3Object = client.getObject(bucketName, id.toString)
-      obj.getObjectContent
+      val obj = client.getObject(bucketName, id.toString)
+      val file = File.createTempFile("fm/", obj.getKey)
+      IOUtils.copy(obj.getObjectContent, new FileOutputStream(file))
+      file
     }
 
   override def remove(id: UUID): Either[SdkBaseException, Boolean] =
@@ -45,9 +48,15 @@ class S3FileManager(client: AmazonS3, configuration: Configuration) extends File
       }
     }
 
+  override def parseStringToId(s: String): Either[IllegalArgumentException, UUID] =
+    Try(UUID.fromString(s)).toEither.left.map {
+      case e: IllegalArgumentException => e
+      case e => throw e
+    }
+
   private def callS3[T](call: => T): Either[SdkBaseException, T] = {
     Try(call).toEither.left.map {
-      case sbe: SdkBaseException => sbe
+      case e: SdkBaseException => e
       case e => throw e
     }
   }

@@ -5,7 +5,7 @@ import java.util.UUID
 
 import com.amazonaws.SdkBaseException
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model.S3Object
+import com.amazonaws.services.s3.model.{S3Object, S3ObjectInputStream}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
@@ -51,7 +51,11 @@ class S3FileManagerTest extends FunSuite with MockFactory {
   test("should download a file") {
     val obj = mock[S3Object]
     (client.getObject(_: String, _: String)).expects(bucketName, id.toString).returning(obj)
-    (obj.getObjectContent _).expects()
+    (obj.getKey _).expects()
+    // used by IOUtils
+    val inputStream = mock[S3ObjectInputStream]
+    (inputStream.read(_: Array[Byte])).expects(*).returning(-1)
+    (obj.getObjectContent _).expects().returning(inputStream)
     manager.download(id)
   }
 
