@@ -20,7 +20,11 @@ class S3FileManager(client: AmazonS3, configuration: Configuration) extends File
 
   // inject here, because we need a constructor with AmazonS3 argument for tests
   @Inject() def this(configuration: Configuration) =
-    this(AmazonS3ClientBuilder.defaultClient(), configuration)
+    this(
+      AmazonS3ClientBuilder.standard()
+        .withRegion(configuration.get[String]("aws.s3.bucket.region"))
+        .build(),
+      configuration)
 
   override def upload(file: File): Either[SdkBaseException, UUID] =
     callS3 {
