@@ -1,5 +1,6 @@
 package controllers
 
+import io.swagger.annotations._
 import javax.inject.Inject
 import play.api.libs.Files
 import play.api.mvc._
@@ -7,9 +8,11 @@ import services.FileManager
 
 import scala.concurrent.ExecutionContext
 
+@Api("File management")
 class FileController @Inject()(cc: ControllerComponents, manager: FileManager)
                               (implicit ec: ExecutionContext) extends AbstractController(cc) {
-
+  
+  @ApiImplicitParams(Array(new ApiImplicitParam(name = "file", required = true, paramType = "form", dataType = "file")))
   def upload: Action[MultipartFormData[Files.TemporaryFile]] = Action(parse.multipartFormData) { request =>
     request.body.file("file").map { file =>
       handleError {

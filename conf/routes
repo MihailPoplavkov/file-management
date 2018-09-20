@@ -6,3 +6,10 @@
 GET         /files/:id/download                         controllers.FileController.download(id: String)
 POST        /files                                      controllers.FileController.upload
 DELETE      /files/:id                                  controllers.FileController.remove(id: String)
+
+GET         /                                           controllers.SwaggerController.swagger
+GET         /swagger.json                               controllers.ApiHelpController.getResources
+GET         /webjars/*file                              org.webjars.play.WebJarAssets.at(file)
+GET         /images/*file                               controllers.Assets.at(path="/public/images", file)
+GET         /fonts/*file                                controllers.Assets.at(path="/public/fonts", file)
+GET         /assets/*file                               controllers.Assets.versioned(path="/public", file: Asset)
