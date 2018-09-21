@@ -2,16 +2,30 @@ package services
 
 import java.io.File
 
+import services.FileManager.FileManagerException
+
 trait FileManager {
 
   type Id
 
-  def upload(file: File): Either[Throwable, Id]
+  def upload(file: File): Either[FileManagerException, Id]
 
-  def download(id: Id): Either[Throwable, File]
+  def download(id: Id): Either[FileManagerException, File]
 
-  def remove(id: Id): Either[Throwable, Boolean]
+  def remove(id: Id): Either[FileManagerException, Unit]
 
-  def parseStringToId(s: String): Either[IllegalArgumentException, Id]
+  def parseStringToId(s: String): Either[FileManagerException, Id]
+
+}
+
+object FileManager {
+
+  sealed trait FileManagerException
+
+  case class FileNotFoundException(id: String) extends FileManagerException
+
+  case class IncorrectIdFormatException(id: String) extends FileManagerException
+
+  case class OtherException(msg: String) extends FileManagerException
 
 }

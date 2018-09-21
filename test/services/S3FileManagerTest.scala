@@ -10,6 +10,7 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 import play.api.Configuration
+import services.FileManager.{FileNotFoundException, OtherException}
 
 class S3FileManagerTest extends FunSuite with MockFactory {
 
@@ -29,27 +30,28 @@ class S3FileManagerTest extends FunSuite with MockFactory {
 
   test("should return exception when it occurs while uploading") {
     (client.putObject(_: String, _: String, _: File)).expects(bucketName, *, file).throwing(exception)
-    manager.upload(file) shouldBe Left(exception)
+    manager.upload(file) shouldBe Left(OtherException(exception.getMessage))
   }
 
   test("should delete existing file") {
     (client.doesObjectExist(_: String, _: String)).expects(bucketName, id.toString).returning(true)
     (client.deleteObject(_: String, _: String)).expects(bucketName, id.toString)
-    manager.remove(id) shouldBe Right(true)
+    manager.remove(id) shouldBe Right(())
   }
 
   test("should return false when deletes nonexistent file") {
     (client.doesObjectExist(_: String, _: String)).expects(bucketName, id.toString).returning(false)
-    manager.remove(id) shouldBe Right(false)
+    manager.remove(id) shouldBe Left(FileNotFoundException(id.toString))
   }
 
   test("should return exception when it occurs while deleting") {
     (client.doesObjectExist(_: String, _: String)).expects(bucketName, id.toString).throwing(exception)
-    manager.remove(id) shouldBe Left(exception)
+    manager.remove(id) shouldBe Left(OtherException(exception.getMessage))
   }
 
   test("should download a file") {
     val obj = mock[S3Object]
+    (client.doesObjectExist(_: String, _: String)).expects(bucketName, id.toString).returning(true)
     (client.getObject(_: String, _: String)).expects(bucketName, id.toString).returning(obj)
     (obj.getKey _).expects()
     // used by IOUtils
@@ -59,9 +61,15 @@ class S3FileManagerTest extends FunSuite with MockFactory {
     manager.download(id)
   }
 
+  test("should return exception when trying to download nonexistent file") {
+    (client.doesObjectExist(_: String, _: String)).expects(bucketName, id.toString).returning(false)
+    manager.download(id) shouldBe Left(FileNotFoundException(id.toString))
+  }
+
   test("should return exception when it occurs while downloading") {
+    (client.doesObjectExist(_: String, _: String)).expects(bucketName, id.toString).returning(true)
     (client.getObject(_: String, _: String)).expects(bucketName, id.toString).throwing(exception)
-    manager.download(id) shouldBe Left(exception)
+    manager.download(id) shouldBe Left(OtherException(exception.getMessage))
   }
 
 }
