@@ -5,7 +5,7 @@ import java.util.UUID
 
 import com.amazonaws.SdkBaseException
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.model.{S3Object, S3ObjectInputStream}
+import com.amazonaws.services.s3.model.{ObjectMetadata, PutObjectRequest, S3Object, S3ObjectInputStream}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
@@ -14,7 +14,8 @@ import services.FileManager.{FileNotFoundException, OtherException}
 
 class S3FileManagerTest extends FunSuite with MockFactory {
 
-  val file = new File("some_file")
+  val fileName = "some_file"
+  val file = new File(fileName)
   val id: UUID = UUID.randomUUID()
   val bucketName = "BUCKET_NAME"
   val exception = new SdkBaseException("sdk exception")
@@ -24,13 +25,13 @@ class S3FileManagerTest extends FunSuite with MockFactory {
 
 
   test("should upload a file") {
-    (client.putObject(_: String, _: String, _: File)).expects(bucketName, *, file)
-    manager.upload(file)
+    (client.putObject(_: PutObjectRequest)).expects(*)
+    manager.upload(file, fileName)
   }
 
   test("should return exception when it occurs while uploading") {
-    (client.putObject(_: String, _: String, _: File)).expects(bucketName, *, file).throwing(exception)
-    manager.upload(file) shouldBe Left(OtherException(exception.getMessage))
+    (client.putObject(_: PutObjectRequest)).expects(*).throwing(exception)
+    manager.upload(file, fileName) shouldBe Left(OtherException(exception.getMessage))
   }
 
   test("should delete existing file") {
@@ -53,11 +54,17 @@ class S3FileManagerTest extends FunSuite with MockFactory {
     val obj = mock[S3Object]
     (client.doesObjectExist(_: String, _: String)).expects(bucketName, id.toString).returning(true)
     (client.getObject(_: String, _: String)).expects(bucketName, id.toString).returning(obj)
+
+    val metaName = new ObjectMetadata()
+    metaName.addUserMetadata("file_name", fileName)
+    (obj.getObjectMetadata _).expects().returning(metaName)
     (obj.getKey _).expects()
+
     // used by IOUtils
     val inputStream = mock[S3ObjectInputStream]
     (inputStream.read(_: Array[Byte])).expects(*).returning(-1)
     (obj.getObjectContent _).expects().returning(inputStream)
+
     manager.download(id)
   }
 

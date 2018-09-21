@@ -8,9 +8,9 @@ trait FileManager {
 
   type Id
 
-  def upload(file: File): Either[FileManagerException, Id]
+  def upload(file: File, name: String): Either[FileManagerException, Id]
 
-  def download(id: Id): Either[FileManagerException, File]
+  def download(id: Id): Either[FileManagerException, (File, String)]
 
   def remove(id: Id): Either[FileManagerException, Unit]
 

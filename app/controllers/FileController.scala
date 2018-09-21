@@ -18,7 +18,7 @@ class FileController @Inject()(cc: ControllerComponents, manager: FileManager, l
   def upload: Action[MultipartFormData[Files.TemporaryFile]] = Action(parse.multipartFormData) { request =>
     request.body.file("file").map { file =>
       handleError {
-        manager.upload(file.ref.path.toFile).map(id => Ok(id.toString))
+        manager.upload(file.ref.path.toFile, file.filename).map(id => Ok(id.toString))
       }
     }.getOrElse(BadRequest("Missing file"))
   }
@@ -51,10 +51,18 @@ class FileController @Inject()(cc: ControllerComponents, manager: FileManager, l
   }
 
   private def downloadResult(id: String) = handleError {
-    for {
-      parsed <- manager.parseStringToId(id)
-      file <- manager.download(parsed)
-    } yield Ok.sendFile(file, onClose = () => file.delete())
+
+    // The following code doesn't compiles. Bug ?
+    //
+    //    for {
+    //      parsed <- manager.parseStringToId(id)
+    //      (file, name) <- manager.download(parsed)
+    //    } yield Ok.sendFile(file, fileName = _ => name, onClose = () => file.delete())
+
+    manager.parseStringToId(id).flatMap(parsed => manager.download(parsed)).map {
+      case (file, name) =>
+        Ok.sendFile(file, fileName = _ => name, onClose = () => file.delete())
+    }
   }
 
   private def handleError(res: Either[FileManagerException, Result]): Result =
