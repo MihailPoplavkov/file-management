@@ -7,6 +7,10 @@ GET         /files/:id/download                         controllers.FileControll
 POST        /files                                      controllers.FileController.upload
 DELETE      /files/:id                                  controllers.FileController.remove(id: String)
 
+GET         /files/:id/link/expire/:ts                  controllers.FileController.link(id: String, ts: Long)
+GET         /link/:id                                   controllers.FileController.readLink(id: Long)
+
+# Swagger
 GET         /                                           controllers.SwaggerController.swagger
 GET         /swagger.json                               controllers.ApiHelpController.getResources
 GET         /webjars/*file                              org.webjars.play.WebJarAssets.at(file)
